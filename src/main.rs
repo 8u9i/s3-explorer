@@ -114,13 +114,14 @@ fn build_router(state: AppState) -> Router {
         .route("/copy", get(copy_route::copy_form))
         .route("/copy", post(copy_route::copy_object));
 
-    let merged = public
-        .merge(browse)
-        .merge(api)
-        .route_layer(axum::middleware::from_fn_with_state(
-            state.clone(),
-            require_auth,
-        ));
+    let merged = public.merge(
+        browse
+            .merge(api)
+            .route_layer(axum::middleware::from_fn_with_state(
+                state.clone(),
+                require_auth,
+            )),
+    );
 
     merged
         .layer(TraceLayer::new_for_http())
