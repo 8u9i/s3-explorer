@@ -8,6 +8,18 @@ use crate::state::AppState;
 
 pub async fn health(State(state): State<AppState>) -> impl IntoResponse {
     let bucket = state.s3.config.bucket.as_str();
+    (
+        axum::http::StatusCode::OK,
+        Json(json!({
+            "status": "ok",
+            "bucket": bucket,
+            "endpoint": state.s3.config.endpoint,
+        })),
+    )
+}
+
+pub async fn ready(State(state): State<AppState>) -> impl IntoResponse {
+    let bucket = state.s3.config.bucket.as_str();
     match state
         .s3
         .client
@@ -19,7 +31,7 @@ pub async fn health(State(state): State<AppState>) -> impl IntoResponse {
         Ok(_) => (
             axum::http::StatusCode::OK,
             Json(json!({
-                "status": "ok",
+                "status": "ready",
                 "bucket": bucket,
                 "endpoint": state.s3.config.endpoint,
             })),
@@ -38,10 +50,6 @@ pub async fn health(State(state): State<AppState>) -> impl IntoResponse {
                 .into_response()
         }
     }
-}
-
-pub async fn ready() -> impl IntoResponse {
-    (axum::http::StatusCode::OK, "ready")
 }
 
 pub async fn version() -> impl IntoResponse {
