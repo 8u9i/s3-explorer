@@ -33,6 +33,46 @@ Browse, upload, edit, preview, copy, rename, and delete objects in a private buc
 
 ---
 
+## UI & design system
+
+The web UI is intentionally utilitarian: dense, keyboard-first, designed for engineers who live in their terminal. It is server-rendered (Askama) with a small progressive-enhancement JavaScript layer — every page is fully usable with JavaScript disabled.
+
+The full design system is documented in [`DESIGN.md`](./DESIGN.md) and machine-readable tokens live in [`design-tokens.json`](./design-tokens.json). Highlights:
+
+- **Semantic color tokens** — `var(--color-bg)`, `var(--color-fg)`, `var(--color-accent)`, `var(--color-danger)`, `var(--color-muted)`, etc. — that respond to `prefers-color-scheme: dark light`, `prefers-contrast: more`, and `forced-colors: active` automatically.
+- **8-pt spacing rhythm** with a 1.125 type scale (`--space-1` through `--space-9`).
+- **Inline SVG iconography** with per-kind classes (folder, image, video, audio, pdf, code, archive, text). No emoji, no icon font, no JS dependency.
+- **Stable 5-column file grid** that does not shift when action buttons appear, fail states render, or hover affordances change.
+- **Native `<dialog>` for every modal** — new folder, delete confirmation, move confirmation, and the command palette. Free focus trap, `Esc`-to-close, `::backdrop` styling, and ARIA semantics.
+- **Keyboard-first** — every action is reachable without a mouse; the command palette (Cmd/Ctrl+K) provides fuzzy search across navigation, file open, and presigned-URL actions.
+
+### Key bindings
+
+| Shortcut | Action | Available on |
+|---|---|---|
+| `Cmd/Ctrl + K` | Open command palette | Every page |
+| `Cmd/Ctrl + S` | Save (in editor) | `/edit` |
+| `/` | Focus search input | `/browse` |
+| `n` | Open new-folder dialog | `/browse` |
+| `r` | Reload page | Every page |
+| `Esc` | Close any open dialog | Every page |
+| `↑` / `↓` | Move selection in command palette | Palette open |
+| `Enter` | Run the highlighted command | Palette open |
+
+### Accessibility
+
+- Skip-to-content link on every page (Tab once on load).
+- `:focus-visible` rings on every interactive element; 2 px high-contrast outline that honors `forced-colors: active`.
+- Semantic breadcrumb rendered as `<ol>` with `aria-current="page"` on the last segment.
+- All form controls have a real `<label>` (`htmlFor`/`id`).
+- `aria-live="polite"` status toast and per-row `aria-label`s on icon buttons.
+- Honors `prefers-reduced-motion: reduce` (transitions/animations off) and `prefers-contrast: more` (token set swaps to higher-contrast values).
+- Honors `forced-colors: active` (Windows High Contrast) — backgrounds, borders, and focus rings degrade to system colors (`Canvas`, `CanvasText`, `Highlight`, `LinkText`).
+- Every touch target is at least 24×24 CSS pixels (44×44 on touch devices).
+- No `dangerouslySetInnerHTML`. Every string rendered by Askama is HTML-escaped at compile time.
+
+---
+
 ## Quick start (local)
 
 ```bash
@@ -359,6 +399,9 @@ static/                # inlined via include_bytes! in main.rs
 ├── app.js
 ├── app.css
 └── favicon.svg
+
+DESIGN.md              # design system: tokens, components, a11y contract
+design-tokens.json     # machine-readable mirror of the CSS custom properties
 ```
 
 ---
