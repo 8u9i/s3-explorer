@@ -10,13 +10,13 @@ ENV CARGO_TERM_COLOR=always
 
 COPY Cargo.toml Cargo.lock* ./
 RUN mkdir -p src && echo 'fn main() {}' > src/main.rs && \
-    cargo build --release --locked && \
+    cargo build --release && \
     rm -rf src
 
 COPY src ./src
 COPY templates ./templates
 COPY static ./static
-RUN touch src/main.rs && cargo build --release --locked
+RUN touch src/main.rs && cargo build --release
 
 FROM gcr.io/distroless/cc-debian12 AS runtime
 WORKDIR /app
