@@ -142,7 +142,7 @@ pub async fn list_objects(
         String::new()
     };
     let (parent_href, has_parent) = compute_parent(&prefix);
-    let crumb_html = render_crumbs(&prefix);
+    let crumb_segments = render_crumbs(&prefix);
     let prefix_display = if prefix.is_empty() { "root".to_string() } else { prefix.clone() };
     let is_empty = folders.is_empty() && files.is_empty() && !searching;
 
@@ -166,7 +166,7 @@ pub async fn list_objects(
         base_url: base,
         bucket: state.s3.config.bucket.clone(),
         endpoint: state.s3.config.endpoint.clone(),
-        crumb_html,
+        crumb_segments,
         max_upload_bytes: state.s3.config.max_upload_bytes,
     });
 

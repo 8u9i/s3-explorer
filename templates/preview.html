@@ -4,41 +4,59 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark light">
-<title>Preview - {{ key }}</title>
+<title>Preview &middot; {{ name }}</title>
 <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
-<header class="topbar">
+<a href="#preview-main" class="skip-link">Skip to content</a>
+<header class="topbar" role="banner">
   <div class="brand">
-    <span class="logo" aria-hidden="true">&#x1F4C2;</span>
+    <span class="logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
+    </span>
     <a href="/" class="title">S3 Explorer</a>
   </div>
-  <nav class="crumb" aria-label="breadcrumb">
-    <a href="/">root</a>
-    {{ crumb_html|safe }}
+  <nav class="crumb" aria-label="Breadcrumb">
+    <ol class="crumb__list">
+      <li class="crumb__item"><a class="crumb__link" href="/">root</a></li>
+      {% for c in crumb_segments %}
+        <li class="crumb__item">
+          <span class="crumb__sep" aria-hidden="true">/</span>
+          {% if c.is_current %}
+            <span class="crumb__current" aria-current="page">{{ c.label }}</span>
+          {% else %}
+            <a class="crumb__link" href="/browse?prefix={{ c.enc }}">{{ c.label }}</a>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ol>
   </nav>
+  <div class="topbar__actions">
+    <button class="btn small ghost" type="button" data-open-command aria-keyshortcuts="Control+K Meta+K" aria-label="Open command palette">Cmd&middot;K</button>
+  </div>
 </header>
 
-<main class="preview">
+<main id="preview-main" class="preview" tabindex="-1">
   <section class="preview-bar">
-    <h1>{{ name }}</h1>
-    <p class="muted">
-      <code>{{ content_type }}</code>
-      &middot; {{ size_label }}
-      {% if has_modified %}&middot; modified {{ short_modified }}{% endif %}
-    </p>
+    <h1 class="preview-bar__title">{{ name }}</h1>
+    <dl class="kv">
+      <div class="kv__row"><dt class="kv__key">Type</dt><dd class="kv__val"><code>{{ content_type }}</code></dd></div>
+      <div class="kv__row"><dt class="kv__key">Size</dt><dd class="kv__val">{{ size_label }}</dd></div>
+      {% if has_modified %}<div class="kv__row"><dt class="kv__key">Modified</dt><dd class="kv__val"><time datetime="{{ last_modified }}">{{ short_modified }}</time></dd></div>{% endif %}
+      <div class="kv__row"><dt class="kv__key">Key</dt><dd class="kv__val"><code class="break-all">{{ key }}</code></dd></div>
+    </dl>
     <div class="actions">
       <a class="btn" href="{{ download_url }}">Download</a>
       <a class="btn ghost" href="{{ proxy_url }}" target="_blank" rel="noopener">Open proxy</a>
       <button class="btn ghost copy-presign" data-url="{{ presign_url }}" type="button">Copy presigned URL</button>
       {% if is_text %}<a class="btn" href="{{ edit_url }}">Edit</a>{% endif %}
       <a class="btn ghost" href="{{ copy_url }}">Copy/Rename</a>
-      <button class="btn danger" type="button" data-delete="{{ key }}">Delete</button>
+      <button class="btn danger" type="button" data-delete="{{ key }}" aria-label="Delete {{ name }}">Delete</button>
     </div>
   </section>
 
-  <section class="preview-pane">
+  <section class="preview-pane" aria-label="Preview of {{ name }}">
     {% if preview_kind == "image" %}
       <img class="image-preview" src="{{ proxy_url }}" alt="{{ name }}">
     {% endif %}
@@ -49,7 +67,7 @@
       <audio class="media-preview" controls src="{{ proxy_url }}"></audio>
     {% endif %}
     {% if preview_kind == "pdf" %}
-      <iframe class="pdf-preview" src="{{ proxy_url }}"></iframe>
+      <iframe class="pdf-preview" src="{{ proxy_url }}" title="PDF preview of {{ name }}"></iframe>
     {% endif %}
     {% if preview_kind == "text" %}
       <article class="text-preview">
@@ -66,7 +84,18 @@
   </section>
 </main>
 
-<aside class="toast" id="toast" hidden></aside>
+<aside class="toast" id="toast" role="status" aria-live="polite" hidden></aside>
+
+<dialog class="dialog" id="confirm-dialog" aria-labelledby="confirm-dialog-title">
+  <form method="dialog" class="dialog__form">
+    <h2 class="dialog__title" id="confirm-dialog-title">Delete file?</h2>
+    <p class="dialog__body" id="confirm-dialog-body">This will permanently delete the file. This action cannot be undone.</p>
+    <div class="dialog__actions">
+      <button class="btn ghost" value="cancel" type="submit">Cancel</button>
+      <button class="btn danger" value="confirm" type="submit" id="confirm-dialog-ok">Delete</button>
+    </div>
+  </form>
+</dialog>
 
 <script src="/static/app.js" defer></script>
 </body>

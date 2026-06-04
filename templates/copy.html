@@ -4,29 +4,53 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark light">
-<title>Copy / Rename - {{ from }}</title>
+<title>Copy / Rename &middot; {{ name }}</title>
 <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
-<header class="topbar">
+<a href="#copy-form" class="skip-link">Skip to form</a>
+<header class="topbar" role="banner">
   <div class="brand">
-    <span class="logo" aria-hidden="true">&#x1F4C2;</span>
+    <span class="logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
+    </span>
     <a href="/" class="title">S3 Explorer</a>
   </div>
+  <nav class="crumb" aria-label="Breadcrumb">
+    <ol class="crumb__list">
+      <li class="crumb__item"><a class="crumb__link" href="/">root</a></li>
+      {% for c in crumb_segments %}
+        <li class="crumb__item">
+          <span class="crumb__sep" aria-hidden="true">/</span>
+          {% if c.is_current %}
+            <span class="crumb__current" aria-current="page">{{ c.label }}</span>
+          {% else %}
+            <a class="crumb__link" href="/browse?prefix={{ c.enc }}">{{ c.label }}</a>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ol>
+  </nav>
 </header>
 
-<main class="copy">
+<main id="copy-main" class="copy" tabindex="-1">
   <section class="copy-bar">
-    <h1>Copy or rename: <span class="muted">{{ name }}</span></h1>
-    <p class="muted">From: <code>{{ from }}</code></p>
-    <p class="muted">Detected type: <code>{{ content_type }}</code> &middot; {{ size_label }}{% if has_modified %} &middot; modified {{ last_modified }}{% endif %}</p>
+    <h1 class="copy-bar__title">Copy or rename</h1>
+    <p class="muted"><span class="break-all">{{ from }}</span></p>
+    <dl class="kv">
+      <div class="kv__row"><dt class="kv__key">Name</dt><dd class="kv__val">{{ name }}</dd></div>
+      <div class="kv__row"><dt class="kv__key">Type</dt><dd class="kv__val"><code>{{ content_type }}</code></dd></div>
+      <div class="kv__row"><dt class="kv__key">Size</dt><dd class="kv__val">{{ size_label }}</dd></div>
+      {% if has_modified %}<div class="kv__row"><dt class="kv__key">Modified</dt><dd class="kv__val">{{ last_modified }}</dd></div>{% endif %}
+    </dl>
   </section>
 
   <section class="copy-form">
     <form method="post" action="{{ action_url }}" id="copy-form">
-      <label>New key
-        <input name="to" id="to" required value="{{ to_suggestion }}" autofocus>
+      <label class="field">
+        <span class="field__label">New key</span>
+        <input class="field__input" name="to" id="to" required value="{{ to_suggestion }}" autocomplete="off" spellcheck="false" autofocus>
       </label>
       <p class="muted">Use the form <code>folder/filename.ext</code>. The new key must not contain <code>..</code>.</p>
       <div class="actions">
@@ -35,18 +59,32 @@
       </div>
     </form>
 
-    <hr>
-
-    <details>
+    <details class="copy-move">
       <summary>Move (copy + delete source)</summary>
-      <form method="post" action="/api/move?from={{ from_enc }}" id="move-form">
-        <p class="muted">Destination: <code id="move-target"></code></p>
+      <form method="post" action="/api/move?from={{ from_enc }}" id="move-form" class="copy-move__form">
+        <p class="muted">Destination: <code id="move-target" class="break-all"></code></p>
         <input type="hidden" name="to" id="move-to" value="{{ to_suggestion }}">
-        <button class="btn danger" type="submit" onclick="return confirm('Move will delete the original at {{ from }}')">Move</button>
+        <div class="actions">
+          <button class="btn danger" type="button" data-move-confirm="Move will delete the original at {{ from }}">Move</button>
+          <a class="btn ghost" href="/preview/{{ from_enc }}">Cancel</a>
+        </div>
       </form>
     </details>
   </section>
 </main>
+
+<aside class="toast" id="toast" role="status" aria-live="polite" hidden></aside>
+
+<dialog class="dialog" id="confirm-dialog" aria-labelledby="confirm-dialog-title">
+  <form method="dialog" class="dialog__form">
+    <h2 class="dialog__title" id="confirm-dialog-title">Confirm action</h2>
+    <p class="dialog__body" id="confirm-dialog-body">Are you sure?</p>
+    <div class="dialog__actions">
+      <button class="btn ghost" value="cancel" type="submit">Cancel</button>
+      <button class="btn danger" value="confirm" type="submit" id="confirm-dialog-ok">Confirm</button>
+    </div>
+  </form>
+</dialog>
 
 <script src="/static/app.js" defer></script>
 <script>

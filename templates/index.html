@@ -4,90 +4,236 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark light">
-<title>S3 Explorer</title>
+<title>S3 Explorer{% if prefix_display != "root" && prefix_display != "" %} — {{ prefix_display }}{% endif %}</title>
+<meta name="description" content="Private S3 bucket browser, uploader, previewer, and editor.">
 <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/static/app.css">
 </head>
 <body data-prefix="{{ prefix }}">
-<header class="topbar">
-  <div class="brand">
-    <span class="logo" aria-hidden="true">&#x1F4C2;</span>
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<header class="topbar" role="banner">
+  <a class="brand" href="/" aria-label="S3 Explorer — home">
+    <span class="logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 6a2 2 0 012-2h4l2 2h8a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V6z"/>
+        <path d="M3 10h18" stroke="currentColor" stroke-width="1.4" fill="none" opacity="0.4"/>
+      </svg>
+    </span>
     <span class="title">S3 Explorer</span>
-  </div>
-  <nav class="crumb" aria-label="breadcrumb">
-    <a href="/">root</a>
-    {{ crumb_html|safe }}
+  </a>
+
+  <nav class="crumb" aria-label="Folder path">
+    <ol class="crumb__list">
+      {% if !crumb_segments.is_empty() %}
+        <li class="crumb__item"><a class="crumb__link" href="/">root</a></li>
+        {% for seg in crumb_segments %}
+          <li class="crumb__item">
+            <span class="crumb__sep" aria-hidden="true">/</span>
+            {% if seg.is_current %}
+              <span class="crumb__current" aria-current="page">{{ seg.label }}</span>
+            {% else %}
+              <a class="crumb__link" href="/browse?prefix={{ seg.enc }}">{{ seg.label }}</a>
+            {% endif %}
+          </li>
+        {% endfor %}
+      {% else %}
+        <li class="crumb__item"><span class="crumb__current" aria-current="page">root</span></li>
+      {% endif %}
+    </ol>
   </nav>
-  <div class="actions">
-    <a class="btn ghost" href="/api/objects?view=json&amp;prefix={{ prefix }}">JSON</a>
+
+  <div class="topbar-actions">
+    <button class="btn small ghost" type="button" id="palette-btn" title="Command palette">
+      <span aria-hidden="true">⌘K</span>
+      <span class="visually-hidden">Open command palette</span>
+    </button>
+    <a class="btn small ghost" href="/api/objects?view=json&amp;prefix={{ prefix }}">JSON</a>
   </div>
 </header>
 
-<main class="main">
-  <section class="left">
-    <div class="upload-zone" id="upload-zone">
-      <p><strong>Drag &amp; drop</strong> files here, or</p>
-      <label class="btn primary">
-        Choose files
+<main class="page" id="main">
+  <aside class="sidebar" aria-label="Upload and search">
+
+    <div class="panel">
+      <h2 id="upload-title">Upload</h2>
+      <div
+        class="upload-zone"
+        id="upload-zone"
+        role="button"
+        tabindex="0"
+        aria-labelledby="upload-title"
+        aria-describedby="upload-hint upload-prefix"
+      >
+        <p class="upload-zone__title">Drop files here</p>
+        <p class="upload-zone__hint" id="upload-hint">or click to choose</p>
+        <label class="btn primary" for="file-input">
+          <svg class="icon" aria-hidden="true" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 11V3M5 6l3-3 3 3M3 13h10"/></svg>
+          Choose files
+        </label>
         <input type="file" id="file-input" multiple hidden>
-      </label>
-      <p class="hint" id="upload-prefix-hint">Uploads land in: <code>{{ prefix_display }}</code></p>
-      <div class="progress" id="upload-progress" hidden>
-        <div class="bar" id="upload-bar"></div>
-        <span class="label" id="upload-label">0%</span>
+        <p class="upload-zone__prefix" id="upload-prefix">
+          Uploads land in: <code>{{ prefix_display }}</code>
+        </p>
+        <div
+          class="progress"
+          id="upload-progress"
+          role="progressbar"
+          aria-label="Upload progress"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow="0"
+          hidden
+        >
+          <div class="progress__bar" id="upload-bar"></div>
+          <span class="progress__label" id="upload-label">0%</span>
+        </div>
       </div>
     </div>
 
-    <div class="search">
-      <form method="get" action="/browse">
+    <div class="panel">
+      <h2 id="search-title">Search</h2>
+      <form class="search__form" id="search-form" method="get" action="/browse" role="search">
         <input type="hidden" name="prefix" value="{{ prefix }}">
-        <input type="search" name="search" placeholder="Search keys..." value="{{ search }}">
-        <button class="btn" type="submit">Search</button>
+        <label class="visually-hidden" for="search-input">Search by file name</label>
+        <input
+          class="search__input"
+          type="search"
+          name="search"
+          id="search-input"
+          placeholder="Search keys…"
+          value="{{ search }}"
+          autocomplete="off"
+          enterkeyhint="search"
+        >
+        <button class="btn small" type="submit">Search</button>
       </form>
     </div>
 
-    <div class="legend">
-      <p class="muted">Bucket: <code>{{ bucket }}</code></p>
-      <p class="muted">Endpoint: <code>{{ endpoint }}</code></p>
-      <p class="muted">Folders: <strong>{{ total_folders }}</strong> &middot; Files: <strong>{{ total_files }}</strong> &middot; Total: <strong>{{ total_size_label }}</strong></p>
+    <div class="panel" aria-label="Bucket metadata">
+      <h2>Bucket</h2>
+      <dl class="kv">
+        <dt>Bucket</dt><dd><code>{{ bucket }}</code></dd>
+        <dt>Endpoint</dt><dd><code>{{ endpoint }}</code></dd>
+        <dt>Folders</dt><dd><strong>{{ total_folders }}</strong></dd>
+        <dt>Files</dt><dd><strong>{{ total_files }}</strong></dd>
+        <dt>Total</dt><dd><strong>{{ total_size_label }}</strong></dd>
+      </dl>
     </div>
-  </section>
+  </aside>
 
-  <section class="right">
+  <section class="content" aria-labelledby="content-title">
+    <div class="content__toolbar">
+      <h1 class="content__title" id="content-title">
+        {% if searching %}
+          Search results
+          <span class="content__count">({{ search_count }})</span>
+        {% else %}
+          Files in <code>{{ prefix_display }}</code>
+          <span class="content__count">({{ total_folders }} folders, {{ total_files }} files)</span>
+        {% endif %}
+      </h1>
+
+      <div class="content__toolbar-actions">
+        {% if has_parent %}
+          <a class="btn small" href="/browse?prefix={{ parent_href }}">
+            <svg class="icon" aria-hidden="true" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 13l-5-5 5-5M3 8h10"/></svg>
+            Up
+          </a>
+        {% endif %}
+        <button class="btn small" type="button" id="new-folder-btn">
+          <svg class="icon" aria-hidden="true" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 5a1 1 0 011-1h3l2 2h5a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1V5z"/></svg>
+          New folder
+        </button>
+        {% if has_more %}
+          <a class="btn small" href="/browse?prefix={{ prefix }}&amp;cursor={{ next_cursor }}">Next page →</a>
+        {% endif %}
+      </div>
+    </div>
+
     {% if searching %}
-      <h2>Search results ({{ search_count }})</h2>
       {% if search_count == 0 %}
-        <p class="muted">No matches found for &ldquo;{{ search }}&rdquo;.</p>
+        <div class="empty" role="status">
+          <p class="empty__title">No matches for &ldquo;{{ search }}&rdquo;</p>
+          <p class="empty__hint">Try a different search term or <a href="/browse?prefix={{ prefix }}">clear the search</a>.</p>
+        </div>
       {% else %}
-        <ul class="files">
+        <ul class="file-list" role="list" aria-label="Search results">
           {{ search_result_rows|safe }}
         </ul>
       {% endif %}
-      <hr>
-    {% endif %}
-
-    <h2>Files in <code>{{ prefix_display }}</code></h2>
-
-    {% if has_parent %}
-      <p><a class="btn small" href="/browse?prefix={{ parent_href }}">&uarr; Up</a></p>
-    {% endif %}
-
-    {% if is_empty %}
-      <p class="empty">This folder is empty. Drop a file to upload.</p>
+    {% elif is_empty %}
+      <div class="empty" role="status">
+        <p class="empty__title">This folder is empty</p>
+        <p class="empty__hint">Drop a file or click &ldquo;Choose files&rdquo; to upload.</p>
+      </div>
     {% else %}
-      <ul class="files">
+      <ul class="file-list" role="list" aria-label="Files and folders in {{ prefix_display }}">
+        <li class="file-list__header" aria-hidden="true">
+          <span></span>
+          <span>Name</span>
+          <span style="text-align:right">Size</span>
+          <span>Modified</span>
+          <span class="col-actions">Actions</span>
+        </li>
         {{ folder_rows|safe }}
         {{ file_rows|safe }}
       </ul>
     {% endif %}
-
-    {% if has_more %}
-      <p><a class="btn" href="/browse?prefix={{ prefix }}&amp;cursor={{ next_cursor }}">Next page &rarr;</a></p>
-    {% endif %}
   </section>
 </main>
 
-<aside class="toast" id="toast" hidden></aside>
+<dialog id="new-folder-dialog" aria-labelledby="new-folder-title">
+  <form method="post" action="/api/upload" enctype="multipart/form-data" id="new-folder-form">
+    <div class="dialog__head">
+      <h2 class="dialog__title" id="new-folder-title">New folder</h2>
+    </div>
+    <div class="dialog__body">
+      <div>
+        <label for="new-folder-name">Folder name</label>
+        <input type="text" id="new-folder-name" name="new_folder" required autocomplete="off">
+      </div>
+      <p>Folders are created by uploading a zero-byte placeholder file ending in <code>/</code>.</p>
+    </div>
+    <div class="dialog__actions">
+      <button type="button" class="btn ghost" id="cancel-folder">Cancel</button>
+      <button type="submit" class="btn primary">Create</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="confirm-dialog" aria-labelledby="confirm-dialog-title">
+  <form method="dialog" class="dialog__form">
+    <h2 class="dialog__title" id="confirm-dialog-title">Are you sure?</h2>
+    <p class="dialog__body" id="confirm-dialog-body">This action cannot be undone.</p>
+    <div class="dialog__actions">
+      <button class="btn ghost" value="cancel" type="submit">Cancel</button>
+      <button class="btn danger" value="confirm" type="submit" id="confirm-dialog-ok">Confirm</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="command-palette" class="command-palette" aria-labelledby="palette-title">
+  <h2 id="palette-title" class="visually-hidden">Command palette</h2>
+  <input
+    type="text"
+    class="command-palette__input"
+    id="palette-input"
+    placeholder="Type a command or search…"
+    autocomplete="off"
+    aria-label="Command palette query"
+  >
+  <ul class="command-palette__list" id="palette-list" role="listbox" aria-label="Commands"></ul>
+</dialog>
+
+<div
+  class="toast"
+  id="toast"
+  role="status"
+  aria-live="polite"
+  aria-atomic="true"
+  hidden
+></div>
 
 <script src="/static/app.js" defer></script>
 </body>

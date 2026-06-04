@@ -4,47 +4,77 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark light">
-<title>Edit - {{ key }}</title>
+<title>Edit &middot; {{ name }}</title>
 <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
-<header class="topbar">
+<a href="#editor" class="skip-link">Skip to editor</a>
+<header class="topbar" role="banner">
   <div class="brand">
-    <span class="logo" aria-hidden="true">&#x1F4C2;</span>
+    <span class="logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
+    </span>
     <a href="/" class="title">S3 Explorer</a>
   </div>
-  <nav class="crumb" aria-label="breadcrumb">
-    <a href="/">root</a>
-    {{ crumb_html|safe }}
+  <nav class="crumb" aria-label="Breadcrumb">
+    <ol class="crumb__list">
+      <li class="crumb__item"><a class="crumb__link" href="/">root</a></li>
+      {% for c in crumb_segments %}
+        <li class="crumb__item">
+          <span class="crumb__sep" aria-hidden="true">/</span>
+          {% if c.is_current %}
+            <span class="crumb__current" aria-current="page">{{ c.label }}</span>
+          {% else %}
+            <a class="crumb__link" href="/browse?prefix={{ c.enc }}">{{ c.label }}</a>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ol>
   </nav>
+  <div class="topbar__actions">
+    <button class="btn small ghost" type="button" data-open-command aria-keyshortcuts="Control+S Meta+S" aria-label="Save (keyboard shortcut)">Save</button>
+  </div>
 </header>
 
-<main class="edit">
+<main id="edit-main" class="edit" tabindex="-1">
   <section class="edit-bar">
-    <h1>Edit: {{ name }}</h1>
-    <p class="muted">
-      <code>{{ content_type }}</code>
-      &middot; {{ size_label }}
-      {% if has_modified %}&middot; modified {{ short_modified }}{% endif %}
-      &middot; ETag <code>{{ etag }}</code>
-    </p>
+    <h1 class="edit-bar__title">Edit: {{ name }}</h1>
+    <dl class="kv">
+      <div class="kv__row"><dt class="kv__key">Type</dt><dd class="kv__val"><code>{{ content_type }}</code></dd></div>
+      <div class="kv__row"><dt class="kv__key">Size</dt><dd class="kv__val">{{ size_label }}</dd></div>
+      {% if has_modified %}<div class="kv__row"><dt class="kv__key">Modified</dt><dd class="kv__val"><time datetime="{{ last_modified }}">{{ short_modified }}</time></dd></div>{% endif %}
+      <div class="kv__row"><dt class="kv__key">ETag</dt><dd class="kv__val"><code>{{ etag }}</code></dd></div>
+      <div class="kv__row"><dt class="kv__key">Key</dt><dd class="kv__val"><code class="break-all">{{ key }}</code></dd></div>
+    </dl>
     <div class="actions">
-      <button class="btn primary" id="save-btn" type="button">Save (PUT)</button>
+      <button class="btn primary" id="save-btn" type="button">Save</button>
       <a class="btn ghost" href="{{ preview_url }}">Preview</a>
       <a class="btn ghost" href="{{ download_url }}">Download</a>
       <a class="btn ghost" href="{{ copy_url }}">Copy/Rename</a>
-      <button class="btn danger" type="button" data-delete="{{ key }}">Delete</button>
+      <button class="btn danger" type="button" data-delete="{{ key }}" aria-label="Delete {{ name }}">Delete</button>
     </div>
-    <p class="muted" id="edit-status">Railway has no object versioning, so Save overwrites the existing object.</p>
+    <p class="muted" id="edit-status" role="status" aria-live="polite">Save overwrites the existing object. Use Copy/Rename to write a new key.</p>
   </section>
 
   <section class="edit-pane">
-    <textarea id="editor" spellcheck="false">{{ text_content }}</textarea>
+    <label class="visually-hidden" for="editor">File content</label>
+    <textarea id="editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off">{{ text_content }}</textarea>
   </section>
 </main>
 
-<aside class="toast" id="toast" hidden></aside>
+<aside class="toast" id="toast" role="status" aria-live="polite" hidden></aside>
+
+<dialog class="dialog" id="confirm-dialog" aria-labelledby="confirm-dialog-title">
+  <form method="dialog" class="dialog__form">
+    <h2 class="dialog__title" id="confirm-dialog-title">Delete file?</h2>
+    <p class="dialog__body" id="confirm-dialog-body">This will permanently delete the file. This action cannot be undone.</p>
+    <div class="dialog__actions">
+      <button class="btn ghost" value="cancel" type="submit">Cancel</button>
+      <button class="btn danger" value="confirm" type="submit" id="confirm-dialog-ok">Delete</button>
+    </div>
+  </form>
+</dialog>
 
 <script src="/static/app.js" defer></script>
 <script>
@@ -53,9 +83,9 @@
   var btn = document.getElementById('save-btn');
   var status = document.getElementById('edit-status');
   if (!ta || !btn) return;
-  btn.addEventListener('click', function() {
+  function doSave() {
     btn.disabled = true;
-    status.textContent = 'Saving...';
+    status.textContent = 'Saving\u2026';
     fetch('{{ save_url }}', {
       method: 'PUT',
       headers: { 'Content-Type': '{{ content_type }}' },
@@ -70,7 +100,16 @@
     }).finally(function() {
       btn.disabled = false;
     });
+  }
+  btn.addEventListener('click', doSave);
+  document.addEventListener('keydown', function(e) {
+    var mod = e.ctrlKey || e.metaKey;
+    if (mod && (e.key === 's' || e.key === 'S')) {
+      e.preventDefault();
+      doSave();
+    }
   });
+  ta.focus();
 })();
 </script>
 </body>

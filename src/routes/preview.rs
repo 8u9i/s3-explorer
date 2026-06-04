@@ -8,7 +8,7 @@ use serde::Deserialize;
 use tokio::io::AsyncReadExt;
 
 use crate::error::{AppError, AppResult};
-use crate::routes::{guess_content_type, html_escape, human_size, is_text_key, render_crumbs};
+use crate::routes::{guess_content_type, html_escape, human_size, is_text_key, render_crumbs, CrumbSegment};
 use crate::routes::template_into_response;
 use crate::state::AppState;
 
@@ -41,7 +41,7 @@ pub struct PreviewPage {
     pub presign_url: String,
     pub edit_url: String,
     pub copy_url: String,
-    pub crumb_html: String,
+    pub crumb_segments: Vec<CrumbSegment>,
 }
 
 const TEXT_PREVIEW_LIMIT: usize = 1_048_576;
@@ -133,7 +133,7 @@ pub async fn preview(
         .rsplit_once('/')
         .map(|(_, b)| b.to_string())
         .unwrap_or_else(|| key.clone());
-    let crumb_html = render_crumbs(&key);
+    let crumb_segments = render_crumbs(&key);
 
     let page = PreviewPage {
         key: key.clone(),
@@ -153,7 +153,7 @@ pub async fn preview(
         presign_url: format!("{}/api/presign?key={}", base, enc),
         edit_url: format!("{}/edit?key={}", base, enc),
         copy_url: format!("{}/copy?from={}", base, enc),
-        crumb_html,
+        crumb_segments,
     };
 
     let wants_html = headers

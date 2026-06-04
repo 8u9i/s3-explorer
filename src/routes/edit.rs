@@ -9,7 +9,7 @@ use tokio::io::AsyncReadExt;
 
 use crate::error::{AppError, AppResult};
 use crate::routes::{
-    guess_content_type, html_escape, human_size, is_text_key, render_crumbs,
+    guess_content_type, html_escape, human_size, is_text_key, render_crumbs, CrumbSegment,
 };
 use crate::routes::template_into_response;
 use crate::state::AppState;
@@ -36,7 +36,7 @@ pub struct EditPage {
     pub preview_url: String,
     pub download_url: String,
     pub copy_url: String,
-    pub crumb_html: String,
+    pub crumb_segments: Vec<CrumbSegment>,
 }
 
 const EDIT_FETCH_LIMIT: usize = 1_048_576;
@@ -121,7 +121,7 @@ pub async fn edit_form(
         .map(|(_, b)| b.to_string())
         .unwrap_or_else(|| q.key.clone());
     let short_modified: String = last_modified.get(..19).unwrap_or("").to_string();
-    let crumb_html = render_crumbs(&q.key);
+    let crumb_segments = render_crumbs(&q.key);
     let page = EditPage {
         key: q.key.clone(),
         name,
@@ -136,7 +136,7 @@ pub async fn edit_form(
         preview_url: format!("{}/preview/{}", base, enc),
         download_url: format!("{}/files/{}?download=1", base, enc),
         copy_url: format!("{}/copy?from={}", base, enc),
-        crumb_html,
+        crumb_segments,
     };
     template_into_response(&page).map_err(Into::into)
 }

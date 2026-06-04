@@ -5,7 +5,7 @@ use axum::response::{IntoResponse, Response};
 use serde::Deserialize;
 
 use crate::error::{AppError, AppResult};
-use crate::routes::{guess_content_type, html_escape, human_size};
+use crate::routes::{guess_content_type, html_escape, human_size, render_crumbs, CrumbSegment};
 use crate::routes::upload::sanitize_key;
 use crate::state::AppState;
 
@@ -148,7 +148,9 @@ pub async fn copy_form(
         action_url: String,
         name: String,
         to_suggestion: String,
+        crumb_segments: Vec<CrumbSegment>,
     }
+    let crumb_segments = render_crumbs(&q.from);
     let page = CopyPage {
         from: html_escape(&q.from),
         from_enc: enc,
@@ -159,6 +161,7 @@ pub async fn copy_form(
         action_url: format!("{}/api/copy?from={}", base, urlencoding::encode(&q.from).into_owned()),
         name: html_escape(&name),
         to_suggestion,
+        crumb_segments,
     };
     let html = page
         .render()
