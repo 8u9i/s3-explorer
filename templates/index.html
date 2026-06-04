@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>S3 Explorer</title>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body data-prefix="{{ prefix }}">
+<header class="topbar">
+  <div class="brand">
+    <span class="logo" aria-hidden="true">&#x1F4C2;</span>
+    <span class="title">S3 Explorer</span>
+  </div>
+  <nav class="crumb" aria-label="breadcrumb">
+    <a href="/">root</a>
+    {{ crumb_html|safe }}
+  </nav>
+  <div class="actions">
+    <a class="btn ghost" href="/api/objects?view=json&amp;prefix={{ prefix }}">JSON</a>
+  </div>
+</header>
+
+<main class="main">
+  <section class="left">
+    <div class="upload-zone" id="upload-zone">
+      <p><strong>Drag &amp; drop</strong> files here, or</p>
+      <label class="btn primary">
+        Choose files
+        <input type="file" id="file-input" multiple hidden>
+      </label>
+      <p class="hint" id="upload-prefix-hint">Uploads land in: <code>{{ prefix_display }}</code></p>
+      <div class="progress" id="upload-progress" hidden>
+        <div class="bar" id="upload-bar"></div>
+        <span class="label" id="upload-label">0%</span>
+      </div>
+    </div>
+
+    <div class="search">
+      <form method="get" action="/browse">
+        <input type="hidden" name="prefix" value="{{ prefix }}">
+        <input type="search" name="search" placeholder="Search keys..." value="{{ search }}">
+        <button class="btn" type="submit">Search</button>
+      </form>
+    </div>
+
+    <div class="legend">
+      <p class="muted">Bucket: <code>{{ bucket }}</code></p>
+      <p class="muted">Endpoint: <code>{{ endpoint }}</code></p>
+      <p class="muted">Folders: <strong>{{ total_folders }}</strong> &middot; Files: <strong>{{ total_files }}</strong> &middot; Total: <strong>{{ total_size_label }}</strong></p>
+    </div>
+  </section>
+
+  <section class="right">
+    {% if searching %}
+      <h2>Search results ({{ search_count }})</h2>
+      {% if search_count == 0 %}
+        <p class="muted">No matches found for &ldquo;{{ search }}&rdquo;.</p>
+      {% else %}
+        <ul class="files">
+          {{ search_result_rows|safe }}
+        </ul>
+      {% endif %}
+      <hr>
+    {% endif %}
+
+    <h2>Files in <code>{{ prefix_display }}</code></h2>
+
+    {% if has_parent %}
+      <p><a class="btn small" href="/browse?prefix={{ parent_href }}">&uarr; Up</a></p>
+    {% endif %}
+
+    {% if is_empty %}
+      <p class="empty">This folder is empty. Drop a file to upload.</p>
+    {% else %}
+      <ul class="files">
+        {{ folder_rows|safe }}
+        {{ file_rows|safe }}
+      </ul>
+    {% endif %}
+
+    {% if has_more %}
+      <p><a class="btn" href="/browse?prefix={{ prefix }}&amp;cursor={{ next_cursor }}">Next page &rarr;</a></p>
+    {% endif %}
+  </section>
+</main>
+
+<aside class="toast" id="toast" hidden></aside>
+
+<script src="/static/app.js" defer></script>
+</body>
+</html>

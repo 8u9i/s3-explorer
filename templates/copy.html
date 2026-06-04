@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>Copy / Rename - {{ from }}</title>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="logo" aria-hidden="true">&#x1F4C2;</span>
+    <a href="/" class="title">S3 Explorer</a>
+  </div>
+</header>
+
+<main class="copy">
+  <section class="copy-bar">
+    <h1>Copy or rename: <span class="muted">{{ name }}</span></h1>
+    <p class="muted">From: <code>{{ from }}</code></p>
+    <p class="muted">Detected type: <code>{{ content_type }}</code> &middot; {{ size_label }}{% if has_modified %} &middot; modified {{ last_modified }}{% endif %}</p>
+  </section>
+
+  <section class="copy-form">
+    <form method="post" action="{{ action_url }}" id="copy-form">
+      <label>New key
+        <input name="to" id="to" required value="{{ to_suggestion }}" autofocus>
+      </label>
+      <p class="muted">Use the form <code>folder/filename.ext</code>. The new key must not contain <code>..</code>.</p>
+      <div class="actions">
+        <button class="btn primary" type="submit">Copy</button>
+        <a class="btn ghost" href="/preview/{{ from_enc }}">Cancel</a>
+      </div>
+    </form>
+
+    <hr>
+
+    <details>
+      <summary>Move (copy + delete source)</summary>
+      <form method="post" action="/api/move?from={{ from_enc }}" id="move-form">
+        <p class="muted">Destination: <code id="move-target"></code></p>
+        <input type="hidden" name="to" id="move-to" value="{{ to_suggestion }}">
+        <button class="btn danger" type="submit" onclick="return confirm('Move will delete the original at {{ from }}')">Move</button>
+      </form>
+    </details>
+  </section>
+</main>
+
+<script src="/static/app.js" defer></script>
+<script>
+(function() {
+  var to = document.getElementById('to');
+  var target = document.getElementById('move-target');
+  var hidden = document.getElementById('move-to');
+  if (!to || !target || !hidden) return;
+  var sync = function() { target.textContent = to.value; hidden.value = to.value; };
+  to.addEventListener('input', sync);
+  sync();
+})();
+</script>
+</body>
+</html>

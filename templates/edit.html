@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>Edit - {{ key }}</title>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="logo" aria-hidden="true">&#x1F4C2;</span>
+    <a href="/" class="title">S3 Explorer</a>
+  </div>
+  <nav class="crumb" aria-label="breadcrumb">
+    <a href="/">root</a>
+    {{ crumb_html|safe }}
+  </nav>
+</header>
+
+<main class="edit">
+  <section class="edit-bar">
+    <h1>Edit: {{ name }}</h1>
+    <p class="muted">
+      <code>{{ content_type }}</code>
+      &middot; {{ size_label }}
+      {% if has_modified %}&middot; modified {{ short_modified }}{% endif %}
+      &middot; ETag <code>{{ etag }}</code>
+    </p>
+    <div class="actions">
+      <button class="btn primary" id="save-btn" type="button">Save (PUT)</button>
+      <a class="btn ghost" href="{{ preview_url }}">Preview</a>
+      <a class="btn ghost" href="{{ download_url }}">Download</a>
+      <a class="btn ghost" href="{{ copy_url }}">Copy/Rename</a>
+      <button class="btn danger" type="button" data-delete="{{ key }}">Delete</button>
+    </div>
+    <p class="muted" id="edit-status">Railway has no object versioning, so Save overwrites the existing object.</p>
+  </section>
+
+  <section class="edit-pane">
+    <textarea id="editor" spellcheck="false">{{ text_content }}</textarea>
+  </section>
+</main>
+
+<aside class="toast" id="toast" hidden></aside>
+
+<script src="/static/app.js" defer></script>
+<script>
+(function() {
+  var ta = document.getElementById('editor');
+  var btn = document.getElementById('save-btn');
+  var status = document.getElementById('edit-status');
+  if (!ta || !btn) return;
+  btn.addEventListener('click', function() {
+    btn.disabled = true;
+    status.textContent = 'Saving...';
+    fetch('{{ save_url }}', {
+      method: 'PUT',
+      headers: { 'Content-Type': '{{ content_type }}' },
+      body: ta.value
+    }).then(function(res) {
+      if (!res.ok) return res.text().then(function(t) { throw new Error(t || ('HTTP ' + res.status)); });
+      status.textContent = 'Saved at ' + new Date().toLocaleTimeString();
+      window.dispatchEvent(new CustomEvent('toast', { detail: 'Saved' }));
+    }).catch(function(e) {
+      status.textContent = 'Error: ' + e.message;
+      window.dispatchEvent(new CustomEvent('toast', { detail: 'Save failed' }));
+    }).finally(function() {
+      btn.disabled = false;
+    });
+  });
+})();
+</script>
+</body>
+</html>

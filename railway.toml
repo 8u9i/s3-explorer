@@ -1,0 +1,10 @@
+[build]
+builder = "Dockerfile"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "/s3-explorer"
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

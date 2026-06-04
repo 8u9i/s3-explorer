@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>Preview - {{ key }}</title>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="logo" aria-hidden="true">&#x1F4C2;</span>
+    <a href="/" class="title">S3 Explorer</a>
+  </div>
+  <nav class="crumb" aria-label="breadcrumb">
+    <a href="/">root</a>
+    {{ crumb_html|safe }}
+  </nav>
+</header>
+
+<main class="preview">
+  <section class="preview-bar">
+    <h1>{{ name }}</h1>
+    <p class="muted">
+      <code>{{ content_type }}</code>
+      &middot; {{ size_label }}
+      {% if has_modified %}&middot; modified {{ short_modified }}{% endif %}
+    </p>
+    <div class="actions">
+      <a class="btn" href="{{ download_url }}">Download</a>
+      <a class="btn ghost" href="{{ proxy_url }}" target="_blank" rel="noopener">Open proxy</a>
+      <button class="btn ghost copy-presign" data-url="{{ presign_url }}" type="button">Copy presigned URL</button>
+      {% if is_text %}<a class="btn" href="{{ edit_url }}">Edit</a>{% endif %}
+      <a class="btn ghost" href="{{ copy_url }}">Copy/Rename</a>
+      <button class="btn danger" type="button" data-delete="{{ key }}">Delete</button>
+    </div>
+  </section>
+
+  <section class="preview-pane">
+    {% if preview_kind == "image" %}
+      <img class="image-preview" src="{{ proxy_url }}" alt="{{ name }}">
+    {% endif %}
+    {% if preview_kind == "video" %}
+      <video class="media-preview" controls src="{{ proxy_url }}"></video>
+    {% endif %}
+    {% if preview_kind == "audio" %}
+      <audio class="media-preview" controls src="{{ proxy_url }}"></audio>
+    {% endif %}
+    {% if preview_kind == "pdf" %}
+      <iframe class="pdf-preview" src="{{ proxy_url }}"></iframe>
+    {% endif %}
+    {% if preview_kind == "text" %}
+      <article class="text-preview">
+        <pre><code>{{ text_content }}</code></pre>
+        {% if truncated %}<p class="muted">Preview truncated at {{ preview_limit }} bytes. Download for full file.</p>{% endif %}
+      </article>
+    {% endif %}
+    {% if preview_kind == "binary" %}
+      <div class="binary-preview">
+        <p>This file type (<code>{{ content_type }}</code>) cannot be previewed inline.</p>
+        <p><a class="btn primary" href="{{ download_url }}">Download {{ name }}</a></p>
+      </div>
+    {% endif %}
+  </section>
+</main>
+
+<aside class="toast" id="toast" hidden></aside>
+
+<script src="/static/app.js" defer></script>
+</body>
+</html>
