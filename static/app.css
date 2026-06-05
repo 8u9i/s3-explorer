@@ -1130,6 +1130,114 @@ details.copy-form__move > *:not(summary) { margin-top: var(--space-3); }
   align-items: center;
 }
 
+/* ===== Login page ===== */
+.login-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -10%, color-mix(in srgb, var(--accent) 8%, transparent), transparent),
+    var(--bg);
+}
+
+.login-wrap {
+  width: 100%;
+  max-width: 380px;
+  padding: var(--space-5);
+}
+
+.login-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-7) var(--space-5);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.login-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  text-align: center;
+}
+
+.login-brand__icon {
+  width: 44px;
+  height: 44px;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.login-brand__icon svg { width: 100%; height: 100%; }
+
+.login-brand__name {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--fg);
+}
+
+.login-error {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  text-align: center;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.login-field__label {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--fg-muted);
+}
+
+.login-field__input {
+  background: var(--bg-elev-2);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-3);
+  font: inherit;
+  font-size: var(--text-base);
+  transition: border-color var(--duration-fast) var(--ease), box-shadow var(--duration-fast) var(--ease);
+}
+
+.login-field__input::placeholder { color: var(--fg-subtle); }
+
+.login-field__input:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.login-submit {
+  width: 100%;
+  justify-content: center;
+  min-height: 40px;
+  font-size: var(--text-md);
+}
+
 /* ===== Custom scrollbar ===== */
 ::-webkit-scrollbar {
   width: 8px;

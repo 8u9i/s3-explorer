@@ -88,7 +88,11 @@ fn build_router(state: AppState) -> Router {
         .route("/ready", get(health_route::ready))
         .route("/version", get(health_route::version))
         .route("/static/{*path}", get(serve_static))
-        .route("/favicon.ico", get(serve_favicon));
+        .route("/favicon.ico", get(serve_favicon))
+        .route("/login", get(auth::login_page))
+        .route("/login", post(auth::login_submit))
+        .route("/logout", post(auth::logout))
+        .route("/logout", get(auth::logout));
 
     let api = Router::new()
         .route("/api/objects", get(list_route::list_objects))

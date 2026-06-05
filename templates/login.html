@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>Sign in &middot; S3 Explorer</title>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body class="login-body">
+<main class="login-wrap" aria-label="Sign in">
+  <div class="login-card">
+    <div class="login-brand">
+      <span class="login-brand__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 6a2 2 0 012-2h4l2 2h8a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V6z"/>
+          <path d="M3 10h18" stroke="currentColor" stroke-width="1.4" fill="none" opacity="0.4"/>
+        </svg>
+      </span>
+      <span class="login-brand__name">S3 Explorer</span>
+    </div>
+
+    {% if error != "" %}
+    <div class="login-error" role="alert">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="/login{% if redirect != "" %}?next={{ display_url }}{% endif %}" class="login-form" id="login-form">
+      <div class="login-field">
+        <label class="login-field__label" for="username">Username</label>
+        <input class="login-field__input" type="text" id="username" name="username" autocomplete="username" autofocus required>
+      </div>
+      <div class="login-field">
+        <label class="login-field__label" for="password">Password</label>
+        <input class="login-field__input" type="password" id="password" name="password" autocomplete="current-password" required>
+      </div>
+      <button class="btn primary login-submit" type="submit">Sign in</button>
+    </form>
+  </div>
+</main>
+</body>
+</html>

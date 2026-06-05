@@ -2295,6 +2295,7 @@ dependencies = [
  "dotenvy",
  "futures",
  "hex",
+ "hmac 0.12.1",
  "hyper 1.10.1",
  "image",
  "mime_guess",
